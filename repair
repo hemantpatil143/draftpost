@@ -1,0 +1,35 @@
+<?php
+require "wp-load.php";
+ini_set('max_execution_time', 0);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+global $wpdb;
+$sql = "SELECT ID FROM {$wpdb->prefix}posts WHERE `post_type` = 'white-paper' AND `post_status` = 'publish'";
+$res = $wpdb->get_results($sql);
+if($res) {
+	foreach ($res as $k => $v) {
+		$attachment_url = wp_get_attachment_url(get_post_thumbnail_id($v->ID));
+		if($attachment_url) {
+			$atch = str_replace(".pdf", "-pdf.jpg", $attachment_url);
+			$ch = curl_init($atch);
+			curl_setopt($ch, CURLOPT_NOBODY, true);
+			curl_exec($ch);
+			$responseCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			curl_close($ch);
+			if($responseCode == 200){
+				//echo $v->ID . ' - ' . $attachment_url . '<br />';
+				//$updateSql = "UPDATE {$wpdb->prefix}posts SET `post_status` = 'publish' WHERE ID = {$v->ID}";
+				//$res = $wpdb->query($updateSql);
+			} else {
+				 //echo $v->ID . ' - ' . "not exists<br />";
+				$updateSql = "UPDATE {$wpdb->prefix}posts SET `post_status` = 'draft' WHERE ID = {$v->ID}";
+				$res = $wpdb->query($updateSql);
+			}
+		}
+	}
+}
+
+?>
+
